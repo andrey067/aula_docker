@@ -1,0 +1,28 @@
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build
+WORKDIR /src
+COPY *.sln .
+COPY instestv2/*.csproj instestv2/
+RUN dotnet restore
+COPY . .
+
+
+FROM build as testing
+WORKDIR /src/instestv2
+RUN dotnet build
+
+#publish
+FROM build AS publish
+WORKDIR /src/instestv2
+RUN dotnet publish -c Release -o /src/publish
+
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS runtime
+WORKDIR /app
+COPY --from=publish /src/publish .
+#ENTRYPOINT ["dotnet", "instestv2.dll"]
+# heroku uses the following 
+
+RUN useradd -m instestv2
+USER andrey067
+
+CMD ASPNETCORE_URLS=http://*:$PORT dotnet instestv2.dll
+
